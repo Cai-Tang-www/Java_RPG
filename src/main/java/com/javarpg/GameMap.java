@@ -10,7 +10,7 @@ import java.util.Random;
 public class GameMap extends JFrame implements KeyListener, MouseListener {
     // 核心对象
     private Magician m;
-    private Godzila g;
+    // private Godzila g;
     
     // **新增：背景地图/地形数组**
     // 存储地图符号：# 墙壁，. 路径，^ 玩家初始位，! 怪物刷新区
@@ -18,7 +18,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         {"#", "#", "#", "#"},
         {"#", "#", ".", "!"},
         {"#", ".", ".", "#"},
-        {"#", "^", "#", "#"} 
+        {"#", "O", "#", "#"} 
     };
 
     // 玩家在地图中的坐标 (y=行, x=列)
@@ -37,12 +37,11 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     private int mhp_initial; // 初始/最大HP用于显示
     private int ghp_initial;
     
-    public GameMap(Magician m, Godzila g) {
+    public GameMap(Magician m) {
         this.m = m;
-        this.g = g;
         // 保存初始最大值，用于 UI 显示
         this.mhp_initial = m.getMaxHP();
-        this.ghp_initial = g.getMaxHP();
+
         
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -90,11 +89,11 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
 
                 // 如果该位置有 Character 实体 (Player/Enemy)
                 if (gm.get(i).get(j) != null) {
-                    symbol = "@"; // 玩家显示为 '@'
+                    symbol = "^"; // 玩家显示为 '^'
                 }
 
                 JLabel jlabel = new JLabel(symbol);
-                // 设置字体和颜色，让地图更好看 (可选)
+                // 设置字体和颜色，让地图更好看 
                 jlabel.setFont(new Font("Monospaced", Font.BOLD, 24)); 
                 jlabel.setForeground(symbol.equals("#") ? Color.GRAY : Color.BLACK);
                 
@@ -143,9 +142,27 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         gm.get(y).set(x, m);
 
         // 3. 检查是否触发事件 (例如遇到怪物 !)
-        if (terrain[y][x].equals("!")) {
-            fight();
+        Random random = new Random();
+        double rate  = 0.2;
+        if(terrain[y][x].equals(".")){
+            if(random.nextDouble()<rate){
+                System.out.println("遇到敌人");
+                Enemy encounteredEnemy ;
+                int enemyType = random.nextInt(2);
+                if (enemyType == 0) {
+                    encounteredEnemy = new Monster("史莱姆", 50, 0, 10, 5, 1, 10);
+                } else {
+                    encounteredEnemy = new Monster("哥布林", 70, 10, 15, 8, 2, 15);
+                }
+                fight(encounteredEnemy);
+            }
+        }if(terrain[y][x].equals("!")){
+                System.out.println("遇到敌人");
+                Enemy encounteredEnemy ;
+                encounteredEnemy = new Godzila();
+                fight(encounteredEnemy);
         }
+        
         
         // 4. 刷新地图 UI
         addGameMap();
@@ -176,7 +193,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     // 战斗 UI 和逻辑
     // ---------------------------------------------------
 
-    public void fight() {
+    public void fight(Enemy g) {
         // 确保战斗只在玩家存活时开始
         if (!m.isAlive()) {
              show("角色已死亡，无法战斗。");
@@ -200,21 +217,21 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         JButton basicAttack = new JButton("普攻");
         basicAttack.addActionListener(e -> {
             // 调用 Magician 的方法，Magician 将任务委托给 BattleEngine
-            playerAction(m.useBasicAttack(g, battleEngine), fightFrame);
+            playerAction(m.useBasicAttack(g, battleEngine), fightFrame, g);
         });
         fightFrame.add(basicAttack);
 
         // 小技能按钮
         JButton smallSkill = new JButton("小技能 (MP: 2)");
         smallSkill.addActionListener(e -> {
-            playerAction(m.useSmallSkill(g, battleEngine), fightFrame);
+            playerAction(m.useSmallSkill(g, battleEngine), fightFrame,g);
         });
         fightFrame.add(smallSkill);
 
         // 大招按钮
         JButton bigSkill = new JButton("大招 (MP: 4)");
         bigSkill.addActionListener(e -> {
-            playerAction(m.useBigSkill(g, battleEngine), fightFrame);
+            playerAction(m.useBigSkill(g, battleEngine), fightFrame,g);
         });
         fightFrame.add(bigSkill);
         
@@ -226,18 +243,18 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
      * @param success 玩家行动是否成功 (例如: 蓝量不足则失败)
      * @param frame 当前战斗窗口
      */
-    private void playerAction(boolean success, JFrame frame) {
+    private void playerAction(boolean success, JFrame frame,Enemy g) {
         if (!success) {
             show("行动失败！可能是蓝量不足。");
             return;
         }
 
         // 1. 刷新 UI
-        updateCombatUI();
+        updateCombatUI(g);
 
         // 2. 检查玩家是否获胜 (怪物死亡)
         if (!g.isAlive()) {
-            endBattle(frame, true);
+            endBattle(frame, true,g);
             return;
         }
 
@@ -246,28 +263,26 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         g.actInBattle(m, battleEngine);
 
         // 4. 刷新 UI
-        updateCombatUI();
+        updateCombatUI(g);
 
         // 5. 检查玩家是否失败 (玩家死亡)
         if (!m.isAlive()) {
-            endBattle(frame, false);
+            endBattle(frame, false,g);
         }
     }
 
-    private void updateCombatUI() {
+    private void updateCombatUI(Enemy g) {
         enemyInfo.setText(g.getName() + " HP: " + g.getHP() + "/" + g.getMaxHP());
         playerInfo.setText(m.getName() + " HP: " + m.getHP() + "/" + m.getMaxHP() + " MP: " + m.getMP() + "/" + m.getMaxMP());
     }
 
-    private void endBattle(JFrame frame, boolean playerWon) {
+    private void endBattle(JFrame frame, boolean playerWon,Enemy g) {
         frame.dispose(); // 关闭战斗窗口
         
         if (playerWon) {
             // 结算奖励并更新玩家状态 (LevelUp/Exp)
             String winMessage = battleEngine.processBattleWin(m, g);
             
-            // 重新实例化怪物，以便下次战斗 (注意：这会创建新的 Godzila 实例)
-            this.g = new Godzila();
             this.ghp_initial = g.getMaxHP(); 
             show(winMessage);
         } else {

@@ -9,6 +9,7 @@ public abstract class Character{
     private int attack ;//攻击
     private int defense;//防御
     private int level;//等级          
+    
     //方法定义
     public int getHP(){
         return HP;

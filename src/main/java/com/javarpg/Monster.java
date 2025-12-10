@@ -8,6 +8,9 @@ public class Monster extends Enemy {
     public Monster() {
         super("小怪", 50, 5, 10, 4, 1, 15);
     }
+    public Monster(String name, int maxHP, int maxMP, int attack, int defense, int level, int expReward) {
+        super(name, maxHP, maxMP, attack, defense, level, expReward);
+    }
 
     @Override
     public void actInBattle(Character target, BattleEngine engine) {
