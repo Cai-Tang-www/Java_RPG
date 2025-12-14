@@ -29,6 +29,8 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     
     // 战斗引擎：处理所有战斗计算
     private BattleEngine battleEngine = new BattleEngine();
+    // 背包
+    private Inventory inventory = new Inventory();
     
     // UI 组件：用于实时更新战斗信息
     private JLabel enemyInfo;
@@ -125,6 +127,8 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
             x--;
         } else if (e.getKeyCode() == KeyEvent.VK_D) { // 右
             x++;
+        }else if (e.getKeyCode()==KeyEvent.VK_Q){ // 打开背包
+            inventory.showInventory(m,this);
         }
 
         // 边界和碰撞检测
@@ -205,13 +209,34 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         fightFrame.setLocationRelativeTo(this);
         fightFrame.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
         fightFrame.setAlwaysOnTop(true);
-        
+        fightFrame.setFocusable(true); // 确保窗口可以获取焦点
+        fightFrame.requestFocusInWindow(); // 立即请求焦点
         // 初始化血量信息标签
         enemyInfo = new JLabel(g.getName() + " HP: " + g.getHP() + "/" + g.getMaxHP());
         playerInfo = new JLabel(m.getName() + " HP: " + m.getHP() + "/" + m.getMaxHP() + " MP: " + m.getMP() + "/" + m.getMaxMP());
 
         fightFrame.add(enemyInfo);
         fightFrame.add(playerInfo);
+
+        //道具按键监听
+        fightFrame.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    endBattle(fightFrame, false,g);
+                }else if(e.getKeyCode() == KeyEvent.VK_1){
+                    inventory.useItem(m, "HP");
+                    updateCombatUI(g);
+                }else if(e.getKeyCode() == KeyEvent.VK_2){
+                    inventory.useItem(m, "MP");
+                    updateCombatUI(g);
+                }
+            }
+        });
+        //背包
+        JButton inventoryButton=new JButton("背包");
+        inventoryButton.addActionListener(e->Inventoryabout(fightFrame,g));
+        fightFrame.add(inventoryButton);
 
         // 攻击按钮 (普攻)
         JButton basicAttack = new JButton("普攻");
@@ -237,6 +262,18 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         
         fightFrame.setVisible(true);
     }
+
+    public void Inventoryabout(JFrame fightFrame,Enemy g){
+        System.out.println("1. 开始设置回调");
+        inventory.setCombatUIupdateCallback(()->{
+            System.out.println("3. 回调函数体正在执行"); 
+            updateCombatUI(g);
+        });
+        System.out.println("2. 回调设置完成");
+        inventory.showInventory(m,fightFrame);
+        updateCombatUI(g);
+
+        }
 
     /**
      * 处理玩家行动后的流程：刷新UI -> 检查胜利 -> 怪物回合 -> 检查失败
@@ -278,10 +315,26 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
 
     private void endBattle(JFrame frame, boolean playerWon,Enemy g) {
         frame.dispose(); // 关闭战斗窗口
+        int HPcount=0;
+        int MPcount=0;
         
         if (playerWon) {
             // 结算奖励并更新玩家状态 (LevelUp/Exp)
-            String winMessage = battleEngine.processBattleWin(m, g);
+            if (g.getName().equals("哥斯拉")){
+                HPcount=10;
+                MPcount=10;
+                inventory.addItem("HP",10);
+                inventory.addItem("MP",10);
+            }else{
+                HPcount=3;
+                MPcount=3;
+                inventory.addItem("HP",3);
+                inventory.addItem("MP",3);
+            }
+
+            
+
+            String winMessage = battleEngine.processBattleWin(m, g ,HPcount,MPcount);
             
             this.ghp_initial = g.getMaxHP(); 
             show(winMessage);

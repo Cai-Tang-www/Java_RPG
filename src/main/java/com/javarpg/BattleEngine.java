@@ -37,13 +37,15 @@ public class BattleEngine {
       @return 奖励信息字符串
      */
 
-    public String processBattleWin(Player winner, Enemy loser) {
+    public String processBattleWin(Player winner, Enemy loser,int HPcount,int MPcount) {
         String result = "恭喜你，战斗胜利！\n";
         
         // 经验
         int expGained = loser.getExpReward();
         winner.gainExp(expGained);
         result += "获得 " + expGained + " 点经验。\n";
+        result += "获得 " + HPcount + " 瓶生命药水。\n";
+        result += "获得 " + MPcount + " 瓶蓝量药水。\n";
         
         //战斗胜利回复10滴血
         winner.setHP(Math.min(winner.getMaxHP(), winner.getHP() + 10)); // 少量回复HP
