@@ -247,21 +247,44 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         fightFrame.add(basicAttack);
 
         // 小技能按钮
-        JButton smallSkill = new JButton("小技能 (MP: 2)");
+        JButton smallSkill = new JButton("日之呼吸—炎舞(小技能) (MP: 2)");
         smallSkill.addActionListener(e -> {
             playerAction(m.useSmallSkill(g, battleEngine), fightFrame,g);
         });
         fightFrame.add(smallSkill);
 
         // 大招按钮
-        JButton bigSkill = new JButton("大招 (MP: 4)");
+        JButton bigSkill = new JButton("爆裂魔法Explosion(大技能) (MP: 4)");
         bigSkill.addActionListener(e -> {
             playerAction(m.useBigSkill(g, battleEngine), fightFrame,g);
         });
         fightFrame.add(bigSkill);
+
+        // 逃跑按钮
+        JButton fleeButton = new JButton("逃跑");
+        fleeButton.addActionListener(e -> {
+            fleeBattle(fightFrame, g);
+        });
+        fightFrame.add(fleeButton);
         
         fightFrame.setVisible(true);
     }
+
+    // 逃跑方法
+    private void fleeBattle(JFrame frame, Enemy g) {
+        frame.dispose(); // 关闭战斗窗口
+
+        // 检查敌人是否是Godzila
+        if (g instanceof Godzila) {
+            show("勇气是人类的赞歌，而你显然失去了勇气...");
+            System.exit(0); // 结束程序
+        } else {
+            show("算你运气好，给你成功逃跑了。");
+            // 战斗结束后，刷新一次地图，确保 UI 状态更新
+            addGameMap();
+        }
+    }
+
 
     public void Inventoryabout(JFrame fightFrame,Enemy g){
         System.out.println("1. 开始设置回调");
