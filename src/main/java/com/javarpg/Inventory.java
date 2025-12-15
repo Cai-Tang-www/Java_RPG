@@ -14,10 +14,8 @@ public class Inventory{
     private Runnable combatUIupdateCallback;
 
     private JFrame inventoryFrame;
-
-    File file=new File("./main/resources/Inventory.txt");
-    //加载本地道具
     public Inventory() {
+        File file=new File("./main/resources/Inventory.txt");
         try{
             Scanner scanner=new Scanner(file);
             while(scanner.hasNextLine()){
@@ -37,8 +35,6 @@ public class Inventory{
             System.out.println("文件未找到");
         }
     }
-
-    //查找目标道具
     private int findItem(String itemName){
         for(int i=0;i<items.size();i++){
             if(items.get(i).getName().equals(itemName)){
@@ -47,8 +43,6 @@ public class Inventory{
         }
         return -1;
     }
-
-    //添加道具
     public void addItem(String itemName,int count) {
         if(itemName.equals("HP")){
             int index=findItem(itemName);
@@ -70,7 +64,6 @@ public class Inventory{
         }
     }
     
-    //使用道具
     public void useItem(Character user,String Itemname) {
         int index=findItem(Itemname);
         if(index!=-1){
@@ -83,23 +76,11 @@ public class Inventory{
             System.out.println("道具未获得");
         }
     }
-    //显示道具列表
     public void displayItems() {
         System.out.println("背包道具如下:");
         for(int i=0;i<items.size();i++){
             System.out.println(items.get(i).getName()+"*"+items.get(i).getCount());
         }
-    }
-    //修改本地文件的道具数量
-    public void saveInventory() {
-        try(FileWriter filewrite = new FileWriter(file)) {
-            for(Item item:items) {
-                filewrite.write(item.getName()+","+item.getCount()+"\n");
-            }
-        } catch(IOException e) {
-            System.out.println("文件写入错误");
-        }
-    // 无需finally，资源自动关闭
     }
 
     //接受回调方法
@@ -108,7 +89,10 @@ public class Inventory{
     }
 
 
-    //背包窗口显示道具
+    //背包窗口
+
+  
+
     public void showInventory(Magician user,JFrame Parent){
         inventoryFrame=new JFrame("背包道具栏(按esc退出)");
         inventoryFrame.setSize(300,200);
@@ -149,7 +133,6 @@ public class Inventory{
     }
 
 
-    //绘制内容面板
     public void repaintInventory(Magician user){
         inventoryFrame.getContentPane().removeAll();
         
@@ -166,9 +149,7 @@ public class Inventory{
 
 
     }
-    
 
-    //按键响应：使用道具
     public void FrameUse(Magician user,Item item){
         item.use(user);
         if(combatUIupdateCallback!=null){

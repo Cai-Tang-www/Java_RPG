@@ -63,12 +63,6 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         this.setLocationRelativeTo(null);
         this.setLayout(null);
         this.addKeyListener(this);
-        this.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                inventory.saveInventory();
-            }
-        });
     }
     
     // 修正：只初始化实体地图 gm，全部用 null 填充，并放置玩家
@@ -133,7 +127,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
             x--;
         } else if (e.getKeyCode() == KeyEvent.VK_D) { // 右
             x++;
-        }else if (e.getKeyCode()==KeyEvent.VK_Q){ // q，打开背包
+        }else if (e.getKeyCode()==KeyEvent.VK_Q){ // 打开背包
             inventory.showInventory(m,this);
         }
 
@@ -269,7 +263,6 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         fightFrame.setVisible(true);
     }
 
-    //打开背包窗口，设置回调函数用来实时更新ui
     public void Inventoryabout(JFrame fightFrame,Enemy g){
         System.out.println("1. 开始设置回调");
         inventory.setCombatUIupdateCallback(()->{

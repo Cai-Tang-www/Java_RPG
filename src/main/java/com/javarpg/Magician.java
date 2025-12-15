@@ -1,14 +1,8 @@
 package main.java.com.javarpg;
-import java.io.*;
-import java.util.Scanner;
-
 
 public class Magician extends Player {
     // 初始化属性
-
-
     public Magician() {
-        
         super("cyxxx", 100, 50, 20, 5, 1, 0, 100);
     }
 
