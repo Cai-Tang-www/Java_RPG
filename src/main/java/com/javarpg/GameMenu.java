@@ -18,12 +18,9 @@ public class GameMenu extends JFrame {
     
     // 游戏核心对象，用于传递给 GameMap
     private final Magician player;
-    private final Godzila monster;
 
-    public GameMenu(Magician player, Godzila monster) {
+    public GameMenu(Magician player) { 
         this.player = player;
-        this.monster = monster;
-        
         SwingUtilities.invokeLater(this::initMenu);
     }
 
@@ -87,7 +84,7 @@ public class GameMenu extends JFrame {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
         buttonPanel.setBackground(Color.DARK_GRAY);
-        buttonPanel.setOpaque(true); // **【修正点】确保面板不透明**
+        buttonPanel.setOpaque(true); 
         
         buttonPanel.add(Box.createVerticalGlue()); 
 

@@ -1,6 +1,9 @@
 package main.java.com.javarpg;
 
 import javax.swing.*;
+
+import java.awt.event.MouseEvent;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -15,10 +18,10 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     // **新增：背景地图/地形数组**
     // 存储地图符号：# 墙壁，. 路径，^ 玩家初始位，! 怪物刷新区
     private String[][] terrain = {
-        {"#", "#", "#", "#"},
+        {"#", "#", "#", "#"}, 
         {"#", "#", ".", "!"},
-        {"#", ".", ".", "#"},
-        {"#", "O", "#", "#"} 
+        {"N", ".", ".", "#"},
+        {"#", "O", "#", "#"}
     };
 
     // 玩家在地图中的坐标 (y=行, x=列)
@@ -26,6 +29,8 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     
     // 实体地图：仅用于存放 Character 实体（Player/Enemy），空位为 null
     ArrayList<ArrayList<Character>> gm = new ArrayList<>();
+    // NPC 地图：存放 NPC 实例
+    private java.util.Map<String, NPC> npcMap = new java.util.HashMap<>();
     
     // 战斗引擎：处理所有战斗计算
     private BattleEngine battleEngine = new BattleEngine();
@@ -65,13 +70,12 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         this.addKeyListener(this);
     }
     
-    // 修正：只初始化实体地图 gm，全部用 null 填充，并放置玩家
     private void initGM() {
         // 根据 terrain 数组的大小初始化 gm
         for (int i = 0; i < terrain.length; i++) {
             ArrayList<Character> row = new ArrayList<>();
             for (int j = 0; j < terrain[0].length; j++) {
-                row.add(null); // 初始全部是空位
+                row.add(null); 
             }
             gm.add(row);
         }
@@ -80,6 +84,9 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         if (y >= 0 && y < gm.size() && x >= 0 && x < gm.get(y).size()) {
             gm.get(y).set(x, m);
         }
+
+        //NPC
+        npcMap.put("2,0", new NPC("村长", java.util.Arrays.asList("你好，冒险者！", "最近村子不太平，小心行事。", "愿星光指引你的道路。")));
     }
 
     // 修正：使用 terrain 数组和 gm 列表共同渲染
@@ -95,7 +102,6 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
                 }
 
                 JLabel jlabel = new JLabel(symbol);
-                // 设置字体和颜色，让地图更好看 
                 jlabel.setFont(new Font("Monospaced", Font.BOLD, 24)); 
                 jlabel.setForeground(symbol.equals("#") ? Color.GRAY : Color.BLACK);
                 
@@ -145,26 +151,35 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         // 2. 将玩家实体放置到新位置
         gm.get(y).set(x, m);
 
-        // 3. 检查是否触发事件 (例如遇到怪物 !)
-        Random random = new Random();
-        double rate  = 0.2;
-        if(terrain[y][x].equals(".")){
-            if(random.nextDouble()<rate){
-                System.out.println("遇到敌人");
-                Enemy encounteredEnemy ;
-                int enemyType = random.nextInt(2);
-                if (enemyType == 0) {
-                    encounteredEnemy = new Monster("史莱姆", 50, 0, 10, 5, 1, 10);
-                } else {
-                    encounteredEnemy = new Monster("哥布林", 70, 10, 15, 8, 2, 15);
-                }
-                fight(encounteredEnemy);
+        // 3. 检查是否触发事件 
+        String currentTerrain = terrain[y][x];
+        if (currentTerrain.equals("N")) {
+            String npcKey = y + "," + x;
+            if (npcMap.containsKey(npcKey)) {
+                NPC npc = npcMap.get(npcKey);
+                show(npc.getRandomDialogue());
             }
-        }if(terrain[y][x].equals("!")){
-                System.out.println("遇到敌人");
-                Enemy encounteredEnemy ;
-                encounteredEnemy = new Godzila();
-                fight(encounteredEnemy);
+        } else {
+            Random random = new Random();
+            double rate  = 0.2;
+            if(terrain[y][x].equals(".")){
+                if(random.nextDouble()<rate){
+                    System.out.println("遇到敌人");
+                    Enemy encounteredEnemy ;
+                    int enemyType = random.nextInt(2);
+                    if (enemyType == 0) {
+                        encounteredEnemy = new Monster("史莱姆", 50, 0, 10, 5, 1, 10);
+                    } else {
+                        encounteredEnemy = new Monster("哥布林", 70, 10, 15, 8, 2, 15);
+                    }
+                    fight(encounteredEnemy);
+                }
+            }if(terrain[y][x].equals("!")){
+                    System.out.println("遇到敌人");
+                    Enemy encounteredEnemy ;
+                    encounteredEnemy = new Godzila();
+                    fight(encounteredEnemy);
+            }
         }
         
         
@@ -247,20 +262,42 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         fightFrame.add(basicAttack);
 
         // 小技能按钮
-        JButton smallSkill = new JButton("小技能 (MP: 2)");
+        JButton smallSkill = new JButton("日之呼吸—炎舞(小技能) (MP: 2)");
         smallSkill.addActionListener(e -> {
             playerAction(m.useSmallSkill(g, battleEngine), fightFrame,g);
         });
         fightFrame.add(smallSkill);
 
         // 大招按钮
-        JButton bigSkill = new JButton("大招 (MP: 4)");
+        JButton bigSkill = new JButton("爆裂魔法Explosion(大技能) (MP: 4)");
         bigSkill.addActionListener(e -> {
             playerAction(m.useBigSkill(g, battleEngine), fightFrame,g);
         });
         fightFrame.add(bigSkill);
+
+        // 逃跑按钮
+        JButton fleeButton = new JButton("逃跑");
+        fleeButton.addActionListener(e -> {
+            fleeBattle(fightFrame, g);
+        });
+        fightFrame.add(fleeButton);
         
         fightFrame.setVisible(true);
+    }
+
+    // 逃跑方法
+    private void fleeBattle(JFrame frame, Enemy g) {
+        frame.dispose(); // 关闭战斗窗口
+
+        // 检查敌人是否是Godzila
+        if (g instanceof Godzila) {
+            show("勇气是人类的赞歌，而你显然失去了勇气...");
+            System.exit(0); // 结束程序
+        } else {
+            show("算你运气好，给你成功逃跑了。");
+            // 战斗结束后，刷新一次地图，确保 UI 状态更新
+            addGameMap();
+        }
     }
 
     public void Inventoryabout(JFrame fightFrame,Enemy g){
