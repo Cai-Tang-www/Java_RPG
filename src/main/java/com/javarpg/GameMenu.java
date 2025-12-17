@@ -15,12 +15,17 @@ public class GameMenu extends JFrame {
     private static final String LOAD_BUTTON_PATH = "images/load_button.png";
     private static final String SETTINGS_BUTTON_PATH = "images/settings_button.png";
     private static final String EXIT_BUTTON_PATH = "images/exit_button.png";
-    
+    private static final String BACKGROUND_MUSIC_PATH = "music/Amos Roddy - Tomorrow's Island.wav";//背景音乐路径
+
     // 游戏核心对象，用于传递给 GameMap
     private final Magician player;
+    // 音频播放器
+    private static AudioPlayer backgroundMusic;
 
     public GameMenu(Magician player) { 
         this.player = player;
+        // 初始化背景音乐
+        backgroundMusic = new AudioPlayer(BACKGROUND_MUSIC_PATH);
         SwingUtilities.invokeLater(this::initMenu);
     }
 
@@ -184,8 +189,13 @@ public class GameMenu extends JFrame {
         volumeSlider.setMajorTickSpacing(25);
         volumeSlider.setPaintTicks(true);
         volumeSlider.setPaintLabels(true);
+
+        // 设置初始音量
+        backgroundMusic.setVolume(50);
         
         volumeSlider.addChangeListener(e -> {
+            int volume = volumeSlider.getValue();
+            backgroundMusic.setVolume(volume);
             System.out.println("音量调节到: " + volumeSlider.getValue());
         });
 
