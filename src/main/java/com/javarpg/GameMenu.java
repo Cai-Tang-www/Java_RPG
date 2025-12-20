@@ -171,7 +171,7 @@ public class GameMenu extends JFrame {
         System.out.println("--- 开始新游戏 ---");
         this.dispose(); 
         // 确保 Magician/Godzila 类和 GameMap 类存在且可访问
-        new GameMap(player); 
+        new GameMap(player,"village"); 
     }
 
     private void loadGame() {

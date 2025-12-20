@@ -1,14 +1,17 @@
 package main.java.com.javarpg;
 
 import javax.swing.*;
-
-import java.awt.event.MouseEvent;
-
+import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.AbstractMap;
+import java.lang.Math;
 
 public class GameMap extends JFrame implements KeyListener, MouseListener {
     // 核心对象
@@ -17,20 +20,38 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     
     // **新增：背景地图/地形数组**
     // 存储地图符号：# 墙壁，. 路径，^ 玩家初始位，! 怪物刷新区
-    private String[][] terrain = {
-        {"#", "#", "#", "#"}, 
-        {"#", "#", ".", "!"},
-        {"N", ".", ".", "#"},
-        {"#", "O", "#", "#"}
-    };
+
+    private int h_size=5;
+    private int w_size=5;
 
     // 玩家在地图中的坐标 (y=行, x=列)
-    int x = 1, y = 3; 
+    private int village_x = 1;
+    private int village_y = 4;
+    private int forest_x = 0;
+    private int forest_y = 2; 
+    private int cave_x = 0;
+    private int cave_y = 15; 
+    private int x,y;
+    //存放不同地图实例
+    private boolean win=false;
+    //不同场景地图的存放哈希表
+    private Map<String,String[][]>maps=new HashMap<>();
+    //不同场景存放角色起始位置的哈希表
+    private Map<String,AbstractMap.SimpleEntry<Integer,Integer>>mapspos=new HashMap<>();
     
+    //不同场景存放角色数组的哈希表
+    private Map<String,ArrayList<ArrayList<Character>>>gmaps =new HashMap<>();
+    //不同场景存放NPC实例的哈希表
+    private Map<String, Map<String, NPC>> npcMaps = new HashMap<>();
+
+
     // 实体地图：仅用于存放 Character 实体（Player/Enemy），空位为 null
-    ArrayList<ArrayList<Character>> gm = new ArrayList<>();
+    private ArrayList<ArrayList<Character>> gm=new ArrayList<>();
+
+    //不同场景地图的地形数组
+    private String [][] terrain;
     // NPC 地图：存放 NPC 实例
-    private java.util.Map<String, NPC> npcMap = new java.util.HashMap<>();
+    private Map<String,NPC>npcMap=new HashMap<>();
     
     // 战斗引擎：处理所有战斗计算
     private BattleEngine battleEngine = new BattleEngine();
@@ -40,12 +61,16 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     // UI 组件：用于实时更新战斗信息
     private JLabel enemyInfo;
     private JLabel playerInfo;
+    private JPanel mapJPanel;
     
     private int mhp_initial; // 初始/最大HP用于显示
     private int ghp_initial;
+    private String showmapName;
+    private String mapName="home";
     
-    public GameMap(Magician m) {
+    public GameMap(Magician m,String showmapName) {
         this.m = m;
+        this.showmapName=showmapName;
         // 保存初始最大值，用于 UI 显示
         this.mhp_initial = m.getMaxHP();
 
@@ -54,6 +79,8 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
             @Override
             public void run() {
                 initJFrame();
+                initMap();
+                initPos();
                 initGM(); // 现在只初始化实体列表 gm
                 addGameMap();
                 setVisible(true);
@@ -61,39 +88,134 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         });
     }
 
+
     private void initJFrame() {
-        this.setSize(800, 600);
+        this.setSize(1000,800);
         this.setTitle("Java RPG - 地图探索");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
-        this.setLayout(null);
+        this.setLayout(new GridLayout(h_size,w_size));
         this.addKeyListener(this);
-    }
-    
-    private void initGM() {
-        // 根据 terrain 数组的大小初始化 gm
-        for (int i = 0; i < terrain.length; i++) {
-            ArrayList<Character> row = new ArrayList<>();
-            for (int j = 0; j < terrain[0].length; j++) {
-                row.add(null); 
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                // 处理窗口关闭
+                inventory.saveInventory();
+                System.exit(0);
             }
-            gm.add(row);
-        }
-        
-        // 放置玩家实体到初始位置 (y=3, x=1)
-        if (y >= 0 && y < gm.size() && x >= 0 && x < gm.get(y).size()) {
-            gm.get(y).set(x, m);
-        }
+        });
+    }
 
+    public void initMap(){
+        String [][] villagemap={
+            {"#", "#", "#", "#", "#"}, 
+            {"#", "#", "#", "#", "#"}, 
+            {"#", "#", ".", ".", "!"},
+            {"N", ".", ".", "#", "#"},
+            {"#", "O", "#", "#", "#"}
+        };
+        String [][] forestmap={
+            {"#", "#", "#", "#", "#", "#", "#", "#", "#", "#"}, 
+            {"#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"0", ".", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", ".", "#", "N", "#", "#", "#", "#", "#", "#"},
+            {"N", ".", ".", ".", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", ".", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", ".", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", ".", ".", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", "#", ".", ".", ".", ".", ".", "#", "#"},
+            {"#", "#", "#", "#", ".", "#", "#", "!", "#", "#"},
+        };
+        String [][] cavemap={
+            {"#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"}, 
+            {"#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", "#", "#", "#", "#", "#", "N", ".", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", "#", "#", "#", "#", "#", ".", ".", ".", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", "#", "#", "#", "#", ".", ".", "N", ".", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", "#", "#", "#", "#", ".", "#", "#", ".", ".", ".", ".", "#", "#", "#"},
+            {"#", "#", "#", "#", "N", ".", ".", "#", "#", "#", "#", "N", ".", ".", "#", "#"},
+            {"#", "#", "#", "#", ".", ".", "N", "#", "#", "#", "#", "#", "#", ".", ".", "#"},
+            {"#", "#", "#", "#", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", ".", "!"},
+            {"#", "#", "#", ".", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", "#", ".", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", ".", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", ".", "N", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+            {"#", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"}, 
+            {"0", ".", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"},
+        };
+        maps.put("village", villagemap);
+        maps.put("forest", forestmap);
+        maps.put("cave", cavemap);
+
+    }
+    public void initPos(){
+        mapspos.put("village", new AbstractMap.SimpleEntry<>(village_x,village_y));
+        mapspos.put("forest", new AbstractMap.SimpleEntry<>(forest_x,forest_y));
+        mapspos.put("cave", new AbstractMap.SimpleEntry<>(cave_x,cave_y));
+    }
+    public void initGM() {
+        // 根据 terrain 数组的大小初始化 gm
+        for (Map.Entry<String, String[][]> entry : maps.entrySet()) {
+            String mapName = entry.getKey();
+            String[][] mapData = entry.getValue();
+            ArrayList<ArrayList<Character>> now = new ArrayList<>();
+            Map<String, NPC> nowNPC=new HashMap<>();
+            for (int i = 0; i < mapData.length; i++) {
+                ArrayList<Character> row = new ArrayList<>();
+                for (int j = 0; j < mapData[i].length; j++) {
+                    if (mapData[i][j].equals("N")){
+                        String npc_y=Integer.valueOf(i).toString();
+                        String npc_x=Integer.valueOf(j).toString();
+                        nowNPC.put(npc_y+","+npc_x, new NPC("村民", java.util.Arrays.asList("你好，冒险者！", "最近村子不太平，小心行事。", "愿星光指引你的道路。")));
+                    }
+                    row.add(null); 
+                }
+                now.add(row);
+            }
+            npcMaps.put(mapName, nowNPC);
+            int x=mapspos.get(mapName).getKey();
+            int y=mapspos.get(mapName).getValue();
+            if (y >= 0 && y < now.size() && x >= 0 && x < now.get(y).size()) {
+                now.get(y).set(x, m);
+            }
+            gmaps.put(mapName, now);
+        }
         //NPC
-        npcMap.put("2,0", new NPC("村长", java.util.Arrays.asList("你好，冒险者！", "最近村子不太平，小心行事。", "愿星光指引你的道路。")));
     }
 
     // 修正：使用 terrain 数组和 gm 列表共同渲染
     private void addGameMap() {
+        if (win){
+            show("洞外，晨光初现。风穿过山谷，仿佛在低语一个新时代的开始...");
+        }
         this.getContentPane().removeAll();
-        for (int i = 0; i < gm.size(); i++) {
-            for (int j = 0; j < gm.get(i).size(); j++) {
+        if (this.mapName!=this.showmapName){
+            this.x=mapspos.get(showmapName).getKey();
+            this.y=mapspos.get(showmapName).getValue();
+            this.gm=gmaps.get(showmapName);
+            this.npcMap=npcMaps.get(showmapName);
+            this.terrain=maps.get(showmapName);
+            this.mapName=showmapName;
+        }
+        int yup=Math.max(0,y-h_size/2);
+        int xleft=Math.max(0,x-w_size/2);
+        int ydown=Math.min(terrain.length-1,y+h_size/2);
+        int xright=Math.min(terrain[0].length-1,x+w_size/2);
+        if (Integer.valueOf(yup).equals(0)){
+            ydown=4;
+        }else if (Integer.valueOf(ydown).equals(terrain.length-1)){
+            yup=terrain.length-5;
+        }
+        if (Integer.valueOf(xleft).equals(0)){
+            xright=4;
+        }else if (Integer.valueOf(xright).equals(terrain[0].length-1)){
+            xleft=terrain[0].length-5;
+        }
+
+
+        for (int i = yup; i <= ydown; i++) {
+            for (int j = xleft; j <= xright; j++) {
                 String symbol = terrain[i][j]; // 获取背景符号
 
                 // 如果该位置有 Character 实体 (Player/Enemy)
@@ -104,12 +226,12 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
                 JLabel jlabel = new JLabel(symbol);
                 jlabel.setFont(new Font("Monospaced", Font.BOLD, 24)); 
                 jlabel.setForeground(symbol.equals("#") ? Color.GRAY : Color.BLACK);
-                
-                jlabel.setBounds(j * 50, i * 50, 50, 50);
+               
                 this.getContentPane().add(jlabel);
             }
         }
-        this.getContentPane().repaint();
+        this.getContentPane().revalidate(); // 重新验证组件层次结构
+        this.getContentPane().repaint();    // 重绘面板
     }
     
     
@@ -123,7 +245,6 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         // 记录旧位置
         int oldX = x;
         int oldY = y;
-        
         // 尝试移动
         if (e.getKeyCode() == KeyEvent.VK_W) { // 上
             y--;
@@ -250,7 +371,10 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         });
         //背包
         JButton inventoryButton=new JButton("背包");
-        inventoryButton.addActionListener(e->Inventoryabout(fightFrame,g));
+        inventoryButton.addActionListener(e->{
+            Inventoryabout(fightFrame,g);
+            fightFrame.requestFocusInWindow();
+        });
         fightFrame.add(inventoryButton);
 
         // 攻击按钮 (普攻)
@@ -258,6 +382,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         basicAttack.addActionListener(e -> {
             // 调用 Magician 的方法，Magician 将任务委托给 BattleEngine
             playerAction(m.useBasicAttack(g, battleEngine), fightFrame, g);
+            fightFrame.requestFocusInWindow();
         });
         fightFrame.add(basicAttack);
 
@@ -265,6 +390,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         JButton smallSkill = new JButton("日之呼吸—炎舞(小技能) (MP: 2)");
         smallSkill.addActionListener(e -> {
             playerAction(m.useSmallSkill(g, battleEngine), fightFrame,g);
+            fightFrame.requestFocusInWindow();
         });
         fightFrame.add(smallSkill);
 
@@ -272,6 +398,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         JButton bigSkill = new JButton("爆裂魔法Explosion(大技能) (MP: 4)");
         bigSkill.addActionListener(e -> {
             playerAction(m.useBigSkill(g, battleEngine), fightFrame,g);
+            fightFrame.requestFocusInWindow();
         });
         fightFrame.add(bigSkill);
 
@@ -362,6 +489,13 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
                 MPcount=10;
                 inventory.addItem("HP",10);
                 inventory.addItem("MP",10);
+                if (mapName.equals("village")){
+                        showmapName="forest";
+                    }else if(mapName.equals("forest")){
+                        showmapName="cave";
+                    }else if(mapName.equals("cave")){
+                        this.win=true;
+                    }
             }else{
                 HPcount=3;
                 MPcount=3;

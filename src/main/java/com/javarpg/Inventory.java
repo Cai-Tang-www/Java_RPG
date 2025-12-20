@@ -14,10 +14,9 @@ public class Inventory{
     private Runnable combatUIupdateCallback;
 
     private JFrame inventoryFrame;
+    private File inventoryFile=new File("./main/resources/Inventory.txt");
     public Inventory() {
-        File file=new File("./main/resources/Inventory.txt");
-        try{
-            Scanner scanner=new Scanner(file);
+        try(Scanner scanner=new Scanner(inventoryFile)){
             while(scanner.hasNextLine()){
                 String line=scanner.nextLine();
                 System.out.println("处理的行: " + line);
@@ -31,7 +30,17 @@ public class Inventory{
                     items.add(new MP(ItemName,Itemcount));
                 }
             }
-        }catch(FileNotFoundException e){
+        }catch(IOException e){
+            System.out.println("文件未找到");
+        }
+    }
+
+    public void saveInventory(){
+        try(BufferedWriter writer=new BufferedWriter(new FileWriter(inventoryFile))){
+            for(Item item:items){
+                writer.write(item.getName()+","+item.getCount()+"\n");
+            }
+        }catch(IOException e){
             System.out.println("文件未找到");
         }
     }
@@ -90,9 +99,6 @@ public class Inventory{
 
 
     //背包窗口
-
-  
-
     public void showInventory(Magician user,JFrame Parent){
         inventoryFrame=new JFrame("背包道具栏(按esc退出)");
         inventoryFrame.setSize(300,200);
