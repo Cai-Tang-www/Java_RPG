@@ -8,12 +8,12 @@ import java.awt.*;
 import java.awt.event.*;
 
 
-public class Inventory{
+public class Inventory implements java.io.Serializable {
     private List<Item> items = new ArrayList<>();
 
-    private Runnable combatUIupdateCallback;
+    private transient Runnable combatUIupdateCallback;
 
-    private JFrame inventoryFrame;
+    private transient JFrame inventoryFrame;
     private File inventoryFile=new File("./main/resources/Inventory.txt");
     public Inventory() {
         try(Scanner scanner=new Scanner(inventoryFile)){

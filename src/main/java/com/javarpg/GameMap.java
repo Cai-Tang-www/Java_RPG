@@ -88,6 +88,31 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         });
     }
 
+    // 新增：读档构造函数
+    public GameMap(SaveData data) {
+        this.m = data.player;
+        this.showmapName = data.mapName;
+        this.mhp_initial = m.getMaxHP();
+        this.inventory = data.inventory; // 恢复背包
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                initJFrame();
+                initMap();
+                initPos();
+                
+                // 覆盖当前地图的玩家位置为存档位置
+                mapspos.put(showmapName, new AbstractMap.SimpleEntry<>(data.mapX, data.mapY));
+                
+                initGM(); 
+                addGameMap();
+                setVisible(true);
+                show("欢迎回来，冒险者！");
+            }
+        });
+    }
+
 
     private void initJFrame() {
         this.setSize(1000,800);
@@ -254,8 +279,10 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
             x--;
         } else if (e.getKeyCode() == KeyEvent.VK_D) { // 右
             x++;
-        }else if (e.getKeyCode()==KeyEvent.VK_Q){ // 打开背包
+        }else if(e.getKeyCode()==KeyEvent.VK_Q){ // 打开背包
             inventory.showInventory(m,this);
+        }else if(e.getKeyCode()==KeyEvent.VK_P){ // 保存游戏
+            saveGame();
         }
 
         // 边界和碰撞检测
@@ -535,5 +562,17 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
         jDialog.add(j);
         jDialog.pack();
         jDialog.setVisible(true);
+    }
+
+    // 新增：保存游戏方法
+    public void saveGame() {
+        // 获取当前玩家在当前地图的坐标
+        // 注意：this.x 和 this.y 应该是当前地图的坐标
+        SaveData data = new SaveData(m, inventory, x, y, showmapName);
+        if (GameSaver.saveGame(data)) {
+            show("游戏已保存！");
+        } else {
+            show("保存失败！请检查文件权限。");
+        }
     }
 }
