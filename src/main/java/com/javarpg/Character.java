@@ -1,6 +1,6 @@
 package main.java.com.javarpg;
 //角色 类（包含怪物/人物/等等）
-public abstract class Character{
+public abstract class Character implements java.io.Serializable {
     private String name;//name
     private int maxHP;//最大HP
     private int HP;//HP

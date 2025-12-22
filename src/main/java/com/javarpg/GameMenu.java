@@ -175,7 +175,19 @@ public class GameMenu extends JFrame {
     }
 
     private void loadGame() {
-        JOptionPane.showMessageDialog(this, "读取存档功能待实现...", "功能提示", JOptionPane.INFORMATION_MESSAGE);
+        if (GameSaver.hasSaveFile()) {
+            SaveData data = GameSaver.loadGame();
+            if (data != null) {
+                System.out.println("--- 读取存档成功 ---");
+                this.dispose();
+                // 使用新的构造函数启动游戏
+                new GameMap(data); 
+            } else {
+                JOptionPane.showMessageDialog(this, "读取存档失败！文件可能已损坏。", "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "没有找到存档记录。", "提示", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     private void showSettingsPanel() {
