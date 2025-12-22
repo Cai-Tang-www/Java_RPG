@@ -1,9 +1,8 @@
 package main.java.com.javarpg;
 
 import javax.sound.sampled.*;
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
+import java.io.InputStream;
 
 public class AudioPlayer {
     private Clip clip;
@@ -12,54 +11,12 @@ public class AudioPlayer {
     // 构造函数，加载并播放音乐
     public AudioPlayer(String musicPath) {
         try {
-            AudioInputStream audioIn = null;
-            File musicFile = null;
+            // 使用ClassLoader加载资源文件，路径相对于resources目录
+            ClassLoader classLoader = getClass().getClassLoader();
+            InputStream audioStream = classLoader.getResourceAsStream(musicPath);
 
-            // 方法1: 尝试从编译后的输出目录加载（推荐）
-            String classPath = System.getProperty("java.class.path");
-            System.out.println("Classpath: " + classPath);
-
-            // 检查classpath中是否包含out/production/Java_RPG
-            if (classPath.contains("out/production/Java_RPG")) {
-                String outputDir = classPath.substring(0, classPath.indexOf(";"));
-                musicFile = new File(outputDir, musicPath);
-                if (musicFile.exists()) {
-                    audioIn = AudioSystem.getAudioInputStream(musicFile);
-                    System.out.println("成功从输出目录加载音乐: " + musicFile.getAbsolutePath());
-                }
-            }
-
-            // 方法2: 尝试从当前工作目录的上级目录的resources中加载
-            if (audioIn == null) {
-                String workingDir = System.getProperty("user.dir");
-                // 当前工作目录是src，所以我们需要向上一级到Java_RPG目录
-                File parentDir = new File(workingDir).getParentFile();
-                if (parentDir != null) {
-                    musicFile = new File(parentDir, "src/main/resources/" + musicPath);
-                    if (musicFile.exists()) {
-                        audioIn = AudioSystem.getAudioInputStream(musicFile);
-                        System.out.println("成功从resources目录加载音乐: " + musicFile.getAbsolutePath());
-                    }
-                }
-            }
-
-            // 方法3: 尝试直接从当前工作目录加载
-            if (audioIn == null) {
-                musicFile = new File(musicPath);
-                if (musicFile.exists()) {
-                    audioIn = AudioSystem.getAudioInputStream(musicFile);
-                    System.out.println("成功从当前目录加载音乐: " + musicFile.getAbsolutePath());
-                } else {
-                    // 最后尝试在工作目录下的music文件夹
-                    musicFile = new File("music/" + musicPath);
-                    if (musicFile.exists()) {
-                        audioIn = AudioSystem.getAudioInputStream(musicFile);
-                        System.out.println("成功从工作目录的music文件夹加载音乐: " + musicFile.getAbsolutePath());
-                    }
-                }
-            }
-
-            if (audioIn != null) {
+            if (audioStream != null) {
+                AudioInputStream audioIn = AudioSystem.getAudioInputStream(audioStream);
                 clip = AudioSystem.getClip();
                 clip.open(audioIn);
 
@@ -71,17 +28,14 @@ public class AudioPlayer {
                 // 设置循环播放
                 clip.loop(Clip.LOOP_CONTINUOUSLY);
                 clip.start();
+                System.out.println("成功加载并播放音乐: " + musicPath);
             } else {
                 System.err.println("无法找到音乐文件: " + musicPath);
-                System.err.println("已尝试的路径:");
-                System.err.println("- 输出目录: " + (classPath.contains("out/production/Java_RPG") ? new File(classPath.substring(0, classPath.indexOf(";")), musicPath).getAbsolutePath() : "不适用"));
-                System.err.println("- Resources目录: " + (new File(System.getProperty("user.dir")).getParentFile() != null ? new File(new File(System.getProperty("user.dir")).getParentFile(), "src/main/resources/" + musicPath).getAbsolutePath() : "不适用"));
-                System.err.println("- 当前目录: " + new File(musicPath).getAbsolutePath());
-                System.err.println("- 工作目录music文件夹: " + new File("music/" + musicPath).getAbsolutePath());
+                System.err.println("请检查资源路径是否正确，当前路径应该相对于resources目录");
             }
 
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-            System.err.println("Error playing music: " + e.getMessage());
+            System.err.println("播放音乐时出错: " + e.getMessage());
             e.printStackTrace();
         }
     }

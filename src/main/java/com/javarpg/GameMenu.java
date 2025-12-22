@@ -15,7 +15,7 @@ public class GameMenu extends JFrame {
     private static final String LOAD_BUTTON_PATH = "images/load_button.png";
     private static final String SETTINGS_BUTTON_PATH = "images/settings_button.png";
     private static final String EXIT_BUTTON_PATH = "images/exit_button.png";
-    private static final String BACKGROUND_MUSIC_PATH = "music/Amos Roddy - Tomorrow's Island.wav";//背景音乐路径
+    private static final String BACKGROUND_MUSIC_PATH = "main/resources/music/小瀬村晶 - Light Dance -Home.wav";//背景音乐路径
 
     // 游戏核心对象，用于传递给 GameMap
     private final Magician player;

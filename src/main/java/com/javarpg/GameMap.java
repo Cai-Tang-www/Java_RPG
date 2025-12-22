@@ -187,7 +187,7 @@ public class GameMap extends JFrame implements KeyListener, MouseListener {
     // 修正：使用 terrain 数组和 gm 列表共同渲染
     private void addGameMap() {
         if (win){
-            show("洞外，晨光初现。风穿过山谷，仿佛在低语一个新时代的开始...");
+            show("恭喜你，勇者，战胜了十恶不赦的哥斯拉，但是你的冒险还没有结束，道路的前方依旧充满着未知，坚持下去吧，勇者！");
         }
         this.getContentPane().removeAll();
         if (this.mapName!=this.showmapName){
